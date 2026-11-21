@@ -1,0 +1,139 @@
+# dsh-novel-conductor（舞台监督）
+
+> 谁上场、什么时候上，它排；戏怎么走，你定。
+
+`dsh-novel-conductor` 是 DSH 小说插件系列的可选编排层。它不写正文、不改 beat / fade / voice 的任何账本，只做四件事：
+
+- **排**：一章的 runbook 顺序（preflight → write → segment → verify → digest → close）；
+- **控**：能力矩阵、前置条件、作者等待、失败与恢复；
+- **算**：四段上下文预算（beat ≤800 / fanfic ≤800 / fade ≤1400 / voice ≤600 字）；
+- **记**：每一步的真实收据与已核验产物引用。
+
+没有 conductor，beat / fade / voice 仍可独立使用；装了 conductor，也不会让它们变成子模块。
+
+## 状态（0.1.0-alpha）
+
+- 3 个工具：`cue_run` / `cue_step` / `cue_status`。
+- 6 步 + 1 个等待态：`preflight → [await_author] → write → segment → verify → digest → close`。
+- 两种形态：`assist`（有基线插件）与 `solo`（一个都没有）。
+- 收据以宿主 `tools/result(exec, result)` 为准，再通过 `novelBeat.getArtifact` / `novelFade.getArtifact` / `novelFade.getStatus` 回查。
+- `node --test` **59/59**；含真实 beat 0.9.1 只读服务的集成测试（临时账本 + 合成宿主事件）。
+- **未做**：右栏面板、`strict`、`replay`、冲突裁决、fanfic 步骤、多书并行、统一设置。真实 DSH 宿主的一章验收仍待做。
+
+### Codex 只读复审（2026-11-21）
+
+桌面端 Codex 对 0.1.0 做了只读代码复审，指出 **4 条 blocker + 4 条 should-fix**；本版已全部处理并补了对应测试：
+
+| 问题 | 处理 |
+|---|---|
+| `tools/result` 异步监听与 `cue_step` 竞态 | 监听器**同步入队** raw 事件，`cue_step` 先用 `flushPending` 落盘再读收据 |
+| 跨工作区同名书同章收据可串账 | 收据记录 `dir/cwd`，`matchesRun` 要求与 run 的 cwd 一致 |
+| `beat` 已回退产物仍可适配 | `getArtifact.segment.status === 'reverted'` 拒绝；`close` 再回读 `lastSegment` |
+| `memo_digest` 预览被当成已落账 | 必须有 `receipt.artifactId + revision`，否则 `digest-not-committed` |
+| `awaiting_author` 可直接绕过 | 暂停态拒绝 `cue_step(done)`，必须先 `cue_run({action:"resume"})` |
+| 显式 `failed` 后无法恢复 | `failed` 不再算终态；`resume` 重置当前步骤 |
+| 回退后幂等缓存返回旧成功 | 缓存绑定 `stepId + fingerprint + generation`，resume/revert 递增 generation |
+| `/cue` 查默认目录而非 run 目录 | 命令优先 `activeRunOf(agent)` 的 cwd |
+
+## 安装 / 启用
+
+包本身是 DSH host 插件，没有客户端 UI。当前版本（0.1.0-alpha）尚未发布 npm，先在桌面 profile 里用 `link:` 指向本仓库：
+
+```json
+"dsh-novel-conductor": "link:D:/Novel-gate/dsh-novel-conductor"
+```
+
+并把 `dsh-novel-conductor` 加进 `dsh.profile.bundles`，重启 DSH 或刷新宿主后生效。发布后再用：
+
+```bash
+dsh plugin add dsh-novel-conductor
+```
+
+装好后，`cue_*` 工具与 `/cue` 命令即可用；不需要 `/cue on`。
+
+## 一章怎么走
+
+```text
+1. cue_run({action:"start", book, chapter, required_capabilities:["beat","fade","voice"]})
+      ├─ 若 state=awaiting_author：先去 beat 拍板，再 cue_run({action:"resume"})
+      └─ 若 blocked：看 capabilityMatrix，缺什么补什么
+2. 把正文保存成文件 → cue_step({stepId:"write", artifact:{path, chars, sha1}})
+3. 调 beat_segment → cue_step({stepId:"segment", artifact:{artifactId}})
+4. 调 beat_verify / voice_check → cue_step({stepId:"verify"})
+5. 调 memo_digest → cue_step({stepId:"digest", artifact:{artifactId}})
+6. cue_step({stepId:"close"})
+```
+
+`cue_status({view:"sheet"})` 随时看当前步骤、等待事项、预算与能力矩阵。
+
+## 证据规则（0.1 的红线）
+
+1. **工具调用成功 ≠ 任务完成**。每一步必须由本 run、本 agent、本步骤窗口内的 `tools/result` 收据证明；没有收据的 `segment` 记为 `claimed`，`close` 会拒绝。
+2. **`beat_verify` 失败仍可能 `ok:true`**。通过条件只能是 `verified === true`（或结构化 `pass:true`），并且两者不能互相矛盾。
+3. **旧收据的 revision 可以小于当前账本 revision**。按 `artifactId` 回查，接受 `<=`，不做等值比较。
+4. **收据必须绑定 agent / book / chapter / 步骤窗口**。事件里没有 cwd，conductor 用自己 run 的 cwd 和 agent 绑定；别的 agent、别的书、窗口外的收据一律丢弃。
+5. **一个会话同一时间只允许一个活动 run**。避免同一 agent 的两个 run 串账；要换章先 `close` 或 `abort`。
+6. **不写兄弟账本**。`run.json` 只存状态、步骤、收据引用与产物引用，不复制正文/简报/卡片。
+
+## 数据布局
+
+```text
+<workspace>/.dsh-novel-conductor/
+  runs/<runId>/
+    run.json          # 状态机、能力矩阵、步骤、收据引用
+    receipts.jsonl    # 宿主 tools/result 的投影（正文/卡片正文被丢弃）
+    events.jsonl      # conductor 自己的状态迁移
+```
+
+`run.json` 示例：
+
+```jsonc
+{
+  "schemaVersion": 1, "runId": "run-…", "book": "…", "chapter": 13,
+  "state": "verifying", "currentStep": "verify",
+  "capabilityMatrix": { "beat": { "installed": true, "on": null, "service": 1, "version": "0.9.1", "revision": 42, "ready": true } },
+  "steps": [{ "id": "segment", "state": "done", "verified": true,
+              "source": { "kind": "receipt", "tool": "beat_segment", "callId": "…" },
+              "receipt": { "artifactId": "s-0013", "revision": 43, "hash": "sha256:…" } }],
+  "committedArtifacts": [{ "kind": "beat", "artifactId": "s-0013", "revision": 43 }],
+  "budget": { "chars": 1379, "segments": { "beat": 320, "fade": 804, "voice": 255 } }
+}
+```
+
+## 能力矩阵与降级
+
+| 状态 | 含义 | conductor 行为 |
+|---|---|---|
+| `installed:false` | 没有该服务 | 必需能力 → preflight `blocked`；非必需 → 不排该步 |
+| `installed:true, ready:false` | 有服务但没书/没档案 | 必需能力 → `blocked`，reason 写明 no-book / no-profile |
+| `installed:true, ready:true` | 可读 | 进入步骤 |
+| `on:null` | 0.1 无法从服务观测会话开关 | 如实显示 null，不猜；模型调不到工具时该步会停在缺收据 |
+
+`solo` 形态只排 `preflight → write → close`，不伪造 beat/fade/voice 步骤。
+
+## 开发
+
+```bash
+cd D:/Novel-gate/dsh-novel-conductor
+node --test          # 59 个测试
+npm run check        # node --check
+```
+
+测试分三层：
+
+- `test/run-machine.test.js`：状态机、收据、close gate、resume/revert；
+- `test/receipt.test.js` / `run-store.test.js` / `adapters.test.js`：纯函数与存储；
+- `test/integration/beat-receipt.test.js`：真实 `novelBeat` 0.9.1 只读服务 + 临时账本 + 合成 `tools/result`。
+
+**未验证**：真实 DSH 宿主里跑完整一章（需要作者会话、真实 beat/fade/voice 数据）；本版只到「真实服务 + 合成宿主事件」这一层，不把它宣传成宿主验收通过。
+
+## 设计依据
+
+- [适配契约（现实版）](docs/contract.md)：conductor 实际消费的 beat/fade/voice 形状与判定表。
+- `小说插件系列-conductor-v0.1-开工方案-2026-11-21.md`（Novel-gate 工作区 `docs/`）：本轮范围、切片与 gate。
+- `小说插件系列-conductor-v0.1-开发方案.md`（Novel-gate 工作区 `docs/`）：conductor v1.1 的原始设计。
+- `小说插件系列-五插件协作契约-v1.1.md`（Novel-gate 工作区 `docs/`）：理想契约，文档冻结、不建包。
+
+## License
+
+MIT © 2026 DrizzleGig
