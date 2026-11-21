@@ -54,6 +54,8 @@ dsh plugin add dsh-novel-conductor
 
 装好后，`cue_*` 工具与 `/cue` 命令即可用；不需要 `/cue on`。
 
+> 如果之前用 `link:` 安装过，重装时 pnpm 可能报 `ERR_PNPM_EPERM ... rename ...dsh-novel-conductor`：`node_modules` 里残留的 junction 挡住了原子替换。见 [安装故障排查](docs/install-troubleshooting.md)。
+
 ## 一章怎么走
 
 ```text
