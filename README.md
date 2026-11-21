@@ -11,7 +11,13 @@
 
 没有 conductor，beat / fade / voice 仍可独立使用；装了 conductor，也不会让它们变成子模块。
 
-## 本版本（v0.1.3，2026-11-21）
+## 本版本（v0.1.4，2026-11-21）
+
+- **修：会话头按钮每 10 秒往对话里写一行「cue」**。0.1.3 的 `remote.status` 用 `commands.execute('/cue status')` 读开关，而 DSH 的 `commands.execute()` 每次都会把 `command/run` + `command/done` 写进会话日志，客户端又在轮询 → 对话结束后时间线里每 10 秒多一行。现在 `status` 只读 `novelConductor.isDriving(sessionId)`（新增 `lib/cue-mode.js`），页面不可见时暂停轮询。
+- 点按钮切开关仍走 `/cue on|off`：一次点击一行，是审计不是噪音。
+- 测试 73 → **78**。
+
+### v0.1.3（2026-11-21）
 
 - **改名「故事总控」**：插件行、SKILL、命令文案与会话头按钮统一用这个名字；npm 包名仍是 `dsh-novel-conductor`。
 - **它是本系列的总开关**：装了它以后——关着时 beat / fade / voice / fanfic **全部不工作**（哪怕它们自己的开关开着）；开着时四个都可用（哪怕它们自己的开关关着）。没装它时，四个插件照旧各按自己的开关。
