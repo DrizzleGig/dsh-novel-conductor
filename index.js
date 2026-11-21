@@ -9,8 +9,17 @@ import { findActiveRun, normalizeCwd } from './lib/run-store.js'
 import { flushPending, getRunStatus, statusView } from './lib/run-machine.js'
 import { activeRunOf, clearRun } from './lib/session.js'
 import { enqueueRaw } from './lib/receipt-bus.js'
+import { readFileSync } from 'node:fs'
+
+const VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
 
 const TOOL_PREFIXES = ['beat_', 'memo_', 'voice_', 'fic_']
+
+/** 会话键：DSH 里 agent.id 就是 session id，但两种形态都接受。 */
+const sessionKeyOf = (agent) => {
+  const id = agent?.session?.id ?? agent?.id
+  return typeof id === 'string' && id ? id : null
+}
 
 export const inject = ['tools', 'commands', 'workingDirectory', 'agents']
 
@@ -27,6 +36,9 @@ const SKILL = {
     '谁上场、什么时候上，它排；戏怎么走，你定。它只排步骤、校验收据、在作者拍板时停下。',
     '',
     '## 一章的 runbook（不能跳步）',
+    '',
+    '- **前置**：作者先 `/cue on`（或点会话头「舞台监督」开关）。关着时 `cue_*` 不可见，也不调度任何兄弟插件；',
+    '  开着时即使 beat / fade / voice / fanfic 自己的开关是关的，本会话也能调用它们的工具（不改它们的持久偏好）。',
     '',
     '1. `cue_run({action:"start", book, chapter, required_capabilities})`：装配上下文与能力矩阵。',
     '   - `required_capabilities` 只写这次任务**真的要用**的能力：原创长篇一般不写 `fanfic`——不写就完全不会去读同人项目。',
@@ -64,8 +76,68 @@ export async function apply(ctx) {
   const skills = ctx.get('skills')
   const agentDirs = new Map()
 
+  // ── 接管开关（v0.1.3）：开 = 本会话由舞台监督调度本系列四个插件 ──────────────
+  // 语义：关着时 cue_* 不可见、不调度任何兄弟；开着时即使兄弟自己的开关关着，
+  // 它们的工具也会对本会话可见（beat 的 L1 技能同样补上），但**不改兄弟的持久偏好**。
+  const driving = new Set()
+  const driveListeners = new Set()
+  const isDriving = (sessionId) => typeof sessionId === 'string' && driving.has(sessionId)
+  const emitDrive = (event) => {
+    for (const listener of [...driveListeners]) {
+      try {
+        listener(event)
+      } catch {
+        // 订阅者自己的异常不能影响开关本身。
+      }
+    }
+    // 跨插件广播：兄弟插件可能比 conductor 先加载，所以不走服务引用。
+    try {
+      ctx.emit?.('novel-conductor/drive', event)
+    } catch {
+      // 没有事件总线就只靠服务门（isDriving）。
+    }
+  }
+  const setDriving = (agent, on) => {
+    const sessionId = sessionKeyOf(agent)
+    if (!sessionId) return null
+    const was = driving.has(sessionId)
+    if (on) driving.add(sessionId)
+    else driving.delete(sessionId)
+    if (was !== on) emitDrive({ sessionId, driving: on, agent: agent ?? null })
+    return { sessionId, changed: was !== on, driving: on }
+  }
+  const onDriveChange = (listener) => {
+    if (typeof listener !== 'function') return () => {}
+    driveListeners.add(listener)
+    return () => driveListeners.delete(listener)
+  }
+
   for (const definition of toolDefinitions({ ctx })) {
-    ctx.effect(() => ctx.tools.register(definition))
+    ctx.effect(() => ctx.tools.register(definition, {
+      when: (context) => isDriving(sessionKeyOf(context?.agent)),
+    }))
+  }
+
+  // 只读服务：给兄弟插件问「这个会话是不是被舞台监督接管了」。
+  if (typeof ctx.provide === 'function') {
+    ctx.effect(() => ctx.provide('novelConductor', {
+      service_version: 1,
+      readOnly: true,
+      version: VERSION,
+      identity() {
+        return {
+          plugin: 'dsh-novel-conductor',
+          version: VERSION,
+          service_version: 1,
+          readOnly: true,
+          capabilities: ['conductor.drive'],
+        }
+      },
+      /** 这个会话是否由舞台监督调度（兄弟插件在工具门里 OR 它）。 */
+      isDriving,
+      /** 订阅接管状态：({ sessionId, driving, agent }) => void，返回取消订阅。 */
+      onDriveChange,
+    }))
   }
 
   if (skills?.register) {
@@ -124,6 +196,8 @@ export async function apply(ctx) {
   if (typeof ctx.on === 'function') {
     ctx.effect(() => ctx.on('tools/result', (exec, result) => onToolResult(exec, result)))
     ctx.effect(() => ctx.on('agent/disposed', ({ agent }) => {
+      const sessionId = sessionKeyOf(agent)
+      if (sessionId && driving.delete(sessionId)) emitDrive({ sessionId, driving: false, agent: null })
       agentDirs.delete(agent?.id)
       clearRun(agent?.id)
     }))
@@ -132,34 +206,62 @@ export async function apply(ctx) {
   if (commands?.register) {
     ctx.effect(() => commands.register({
       name: 'cue',
-      description: '舞台监督：/cue status、/cue abort [runId]',
-      input: { hint: 'status | abort [runId]' },
+      description: '舞台监督：/cue on、/cue off、/cue status、/cue abort [runId]',
+      input: { hint: 'on | off | status | abort [runId]' },
       handler: async (invocation) => {
         const agent = invocation?.agent
-        const cwd = activeRunOf(agent?.id)?.cwd ?? await dirFor(agent)
-        if (!cwd) return { kind: 'error', text: '拿不到当前工作区，无法查看舞台监督。' }
         const raw = String(invocation?.rawInput ?? '').trim().replace(/^\/?cue\b/i, '').trim()
         const [action, runId] = raw.split(/\s+/).filter(Boolean)
+        const verb = action ?? 'status'
+
+        // 开关不需要工作区：先处理，免得没有 run 的会话切不了。
+        if (verb === 'on' || verb === 'off') {
+          const result = setDriving(agent, verb === 'on')
+          if (!result) return { kind: 'error', text: '拿不到当前会话，无法切换舞台监督。' }
+          if (verb === 'on') {
+            return {
+              kind: 'success',
+              text: '舞台监督已开启：本会话可以调度 beat / fade / voice / fanfic。'
+                + '它们自己的开关保持原样（不改持久偏好），但本会话里它们的工具与规则会补齐；'
+                + '关闭舞台监督后立即收回。',
+            }
+          }
+          return {
+            kind: 'success',
+            text: '舞台监督已关闭：不再调度任何本系列插件，cue_* 从本会话移除；'
+              + '各插件自己的开关、账本和持久偏好都没有动。',
+          }
+        }
+
+        const cwd = activeRunOf(agent?.id)?.cwd ?? await dirFor(agent)
+        if (!cwd) return { kind: 'error', text: '拿不到当前工作区，无法查看舞台监督。' }
         try {
-          if ((action ?? 'status') === 'status') {
-            const run = await getRunStatus(cwd, { runId, agentId: agent.id })
-            const sheet = statusView(run, 'sheet')
+          if (verb === 'status') {
+            const driveLine = `舞台监督：${isDriving(sessionKeyOf(agent)) ? '开（本会话已接管）' : '关（/cue on 开启）'}`;
+            let run;
+            try {
+              run = await getRunStatus(cwd, { runId, agentId: agent.id });
+            } catch {
+              return { kind: 'success', text: `${driveLine}\n当前没有活动 run；/cue on 之后用 cue_run 开始一章。` };
+            }
+            const sheet = statusView(run, 'sheet');
             return {
               kind: 'success',
               text: [
+                driveLine,
                 `run ${sheet.runId} · ${sheet.state} · 当前 ${sheet.currentStep}`,
                 sheet.pendingAuthor ? `等待作者：${sheet.pendingAuthor.reason}` : null,
                 `步骤：${sheet.steps.map((step) => `${step.id}=${step.state}`).join(' / ')}`,
               ].filter(Boolean).join('\n'),
             }
           }
-          if (action === 'abort') {
+          if (verb === 'abort') {
             const run = await getRunStatus(cwd, { runId, agentId: agent.id })
             const { abortRun } = await import('./lib/run-machine.js')
             await abortRun(cwd, { runId: run.runId, agentId: agent.id, reason: 'author abort' })
             return { kind: 'success', text: `已中止 run ${run.runId}。` }
           }
-          return { kind: 'error', text: '用法：/cue status | /cue abort [runId]' }
+          return { kind: 'error', text: '用法：/cue on | /cue off | /cue status | /cue abort [runId]' }
         } catch (error) {
           return { kind: 'error', text: String(error?.message ?? error) }
         }
