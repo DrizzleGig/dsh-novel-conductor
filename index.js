@@ -113,6 +113,8 @@ export async function apply(ctx) {
   }
 
   for (const definition of toolDefinitions({ ctx })) {
+    // 注：when 每个模型步骤只求值一次，所以步骤中途关掉开关不会立刻收回已获得的调用资格。
+    // 已经在跑的步骤按 run-machine 的收尾规则处理；不额外加执行前闸门（会绕开单测的工具直调路径）。
     ctx.effect(() => ctx.tools.register(definition, {
       when: (context) => isDriving(sessionKeyOf(context?.agent)),
     }))
@@ -175,6 +177,8 @@ export async function apply(ctx) {
     if (typeof name !== 'string' || !TOOL_PREFIXES.some((prefix) => name.startsWith(prefix))) return
     const agent = exec?.agent
     if (!agent?.id) return
+    // 注：接管关着时兄弟插件的工具本来就不可见（装了 conductor 就是总开关），
+    // 所以这里不再按开关过滤收据；收据只挂到「该会话有活动 run」上，见下面的 findActiveRun。
 
     // Capture synchronously; persistence is drained by cue_step as well, so an
     // async listener finishing late cannot turn a committed step into claimed.

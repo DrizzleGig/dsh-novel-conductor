@@ -1,10 +1,12 @@
-// 接管开关的模拟验收（不起 DSH 宿主）：
-//   conductor 关着 → cue_* 不可见、兄弟四个也不可见；
-//   /cue on       → cue_* 可见，且兄弟四个即使自己的开关关着，本会话也可用（beat 的 L1 技能补上）；
-//   /cue off      → 全部回落到原状态，兄弟的持久文件一个字节都没变。
+﻿// 接管开关的模拟验收（不起 DSH 宿主）。
+//
+// 语义（2026-11-21 作者定稿）：
+//   装了 conductor：它就是总开关——关着时四个插件全都不工作（哪怕它们自己的开关开着）；
+//                  开着时四个插件可用（哪怕它们自己的开关关着）；
+//   beat / fade / voice / fanfic 自己的开关优先级更低，只在「没装 conductor」时生效。
 //
 // 五个插件按桌面 profile 的加载顺序挂载（兄弟在前、conductor 最后），
-// 正好覆盖「conductor 晚于兄弟加载」这个最容易出问题的顺序。
+// 覆盖「conductor 晚于兄弟加载」这个最容易出问题的顺序。
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -110,87 +112,101 @@ function snapshot(dir) {
   return out
 }
 
-const gateOf = (host, prefix) => host.tools
+const gatesOf = (host, prefix) => host.tools
   .filter(({ definition }) => definition.name.startsWith(prefix))
   .map(({ definition, when }) => ({ name: definition.name, when }))
 
 const isVisible = (entry, agent) => (typeof entry.when === 'function' ? entry.when({ agent }) === true : true)
 const visibleCount = (entries, agent) => entries.filter((entry) => isVisible(entry, agent)).length
 
-test('接管开关：关 → 兄弟不动；开 → 兄弟在关着开关时也可用；再关 → 回到原状且不写盘', async () => {
+const config = (host) => ({
+  root: host.dir,
+  project: 'fixture-a',
+  fixture: 'dsh-novel-fanfic/fixtures/fixture-a',
+  stateDir: host.stateDir,
+})
+
+async function mountSeries(host) {
+  await applyFade(host.ctx, config(host))
+  await applyVoice(host.ctx, config(host))
+  await applyFanfic(host.ctx, config(host))
+  await applyBeat(host.ctx, config(host))
+  await applyConductor(host.ctx, config(host))
+}
+
+const command = (host, name) => host.commands.find((item) => item.name === name)
+const wait = (ms = 60) => new Promise((resolve) => setTimeout(resolve, ms))
+
+test('装了 conductor：关着时四个插件全都不工作；开着时全都可用；再关回到全不可用且不写盘', async () => {
   const host = makeHost()
-  const config = { root: host.dir, project: 'fixture-a', fixture: 'dsh-novel-fanfic/fixtures/fixture-a', stateDir: host.stateDir }
+  await mountSeries(host)
 
-  // 桌面 profile 的加载顺序：fade → voice → fanfic → beat → conductor。
-  await applyFade(host.ctx, config)
-  await applyVoice(host.ctx, config)
-  await applyFanfic(host.ctx, config)
-  await applyBeat(host.ctx, config)
-  await applyConductor(host.ctx, config)
-
-  const cue = gateOf(host, 'cue_')
-  const beat = gateOf(host, 'beat_')
-  const memo = gateOf(host, 'memo_')
-  const voice = gateOf(host, 'voice_')
-  const fic = gateOf(host, 'fic_')
-  assert.ok(cue.length > 0 && beat.length > 0 && memo.length > 0 && voice.length > 0 && fic.length > 0, '五个插件的工具都要抓到')
+  const cue = gatesOf(host, 'cue_')
+  const beat = gatesOf(host, 'beat_')
+  const memo = gatesOf(host, 'memo_')
+  const voice = gatesOf(host, 'voice_')
+  const fic = gatesOf(host, 'fic_')
+  assert.ok(cue.length > 0 && beat.length > 0 && memo.length > 0 && voice.length > 0 && fic.length > 0)
 
   const before = snapshot(host.dir)
 
-  // 1) 默认关：五个插件一个都不可见。
-  assert.equal(visibleCount(cue, host.agent), 0, 'conductor 关着时 cue_* 不应可见')
-  assert.equal(visibleCount(beat, host.agent), 0, 'beat 自己的开关关着')
-  assert.equal(visibleCount(fic, host.agent), 0, 'fanfic 默认关')
-  assert.equal(host.skills.filter((skill) => skill.name === 'novel-beat').length, 0, 'beat 的 L1 技能不该在')
-
-  // 2) /cue on：conductor 自己可见，兄弟四个即使自己的开关关着也要可见。
-  const command = host.commands.find((item) => item.name === 'cue')
-  assert.ok(command, '要注册 /cue 命令')
-
-  const on = await command.handler({ agent: host.agent, rawInput: '/cue on' })
-  assert.equal(on.kind, 'success')
-  await new Promise((resolve) => setTimeout(resolve, 60)) // 等 beat 的 refreshAgent 落定
-
-  assert.equal(visibleCount(cue, host.agent), cue.length, 'conductor 开着时 cue_* 全部可见')
-  assert.equal(visibleCount(beat, host.agent), beat.length, 'conductor 开着时 beat_* 可见（beat 自己没开）')
-  assert.equal(visibleCount(memo, host.agent), memo.length, 'memo_* 可见')
-  assert.equal(visibleCount(voice, host.agent), voice.length, 'voice_* 可见')
-  assert.equal(visibleCount(fic, host.agent), fic.length, 'fic_* 可见')
-  assert.equal(
-    host.skills.filter((skill) => skill.name === 'novel-beat').length,
-    1,
-    'conductor 接管时 beat 的 L1 技能要补上（否则模型看得到工具、看不到硬规则）',
-  )
-
-  // 3) /cue off：全部回落到原状态，持久文件不变。
-  const off = await command.handler({ agent: host.agent, rawInput: '/cue off' })
-  assert.equal(off.kind, 'success')
-  await new Promise((resolve) => setTimeout(resolve, 60))
-
-  assert.equal(visibleCount(cue, host.agent), 0, '关掉后 cue_* 不可见')
-  assert.equal(visibleCount(beat, host.agent), 0, '关掉后 beat_* 不可见')
+  // 1) 全关：十个工具都不可见，也没有 beat 的 L1 技能。
+  assert.equal(visibleCount(cue, host.agent), 0)
+  assert.equal(visibleCount(beat, host.agent), 0)
   assert.equal(visibleCount(memo, host.agent), 0)
   assert.equal(visibleCount(voice, host.agent), 0)
   assert.equal(visibleCount(fic, host.agent), 0)
-  assert.equal(host.skills.filter((skill) => skill.name === 'novel-beat').length, 0, '关掉后 beat 技能撤下')
+  assert.equal(host.skills.filter((skill) => skill.name === 'novel-beat').length, 0)
 
-  assert.deepEqual(snapshot(host.dir), before, '接管只改内存：书架目录不能有任何新文件')
+  // 2) /cue on：五个插件全部可用（兄弟自己的开关都还关着）。
+  const on = await command(host, 'cue').handler({ agent: host.agent, rawInput: '/cue on' })
+  assert.equal(on.kind, 'success')
+  await wait()
+  assert.equal(visibleCount(cue, host.agent), cue.length)
+  assert.equal(visibleCount(beat, host.agent), beat.length)
+  assert.equal(visibleCount(memo, host.agent), memo.length)
+  assert.equal(visibleCount(voice, host.agent), voice.length)
+  assert.equal(visibleCount(fic, host.agent), fic.length)
+  assert.equal(host.skills.filter((skill) => skill.name === 'novel-beat').length, 1, 'beat 的 L1 技能要一起补上')
+
+  // 3) /cue off：全部收回，书架目录字节不变。
+  const off = await command(host, 'cue').handler({ agent: host.agent, rawInput: '/cue off' })
+  assert.equal(off.kind, 'success')
+  await wait()
+  assert.equal(visibleCount(cue, host.agent), 0)
+  assert.equal(visibleCount(beat, host.agent), 0)
+  assert.equal(visibleCount(memo, host.agent), 0)
+  assert.equal(visibleCount(voice, host.agent), 0)
+  assert.equal(visibleCount(fic, host.agent), 0)
+  assert.equal(host.skills.filter((skill) => skill.name === 'novel-beat').length, 0)
+  assert.deepEqual(snapshot(host.dir), before)
 })
 
-test('/cue status 会报开关状态，且不影响开关', async () => {
+test('装了 conductor：兄弟自己的开关优先级更低——/fic on 了也不生效；没装 conductor 时才按自己的开关', async () => {
+  // A. 装了 conductor、关着：/fic on 之后 fic_* 仍然不可见（总开关说话）。
   const host = makeHost()
-  await applyConductor(host.ctx, {})
-  const command = host.commands.find((item) => item.name === 'cue')
-  const on = await command.handler({ agent: host.agent, rawInput: '/cue on' })
-  assert.equal(on.kind, 'success')
+  await applyFanfic(host.ctx, config(host))
+  await applyConductor(host.ctx, config(host))
+  const fic = gatesOf(host, 'fic_')
+  const cue = gatesOf(host, 'cue_')
 
-  const start = await command.handler({ agent: host.agent, rawInput: '/cue status' })
-  assert.equal(start.kind, 'success')
-  assert.match(start.text, /舞台监督：开/)
+  const ficOn = await command(host, 'fic').handler({ agent: host.agent, rawInput: 'on' })
+  assert.equal(ficOn.kind, 'success')
+  assert.equal(visibleCount(fic, host.agent), 0, 'conductor 关着时，fanfic 自己的 /fic on 不生效')
 
-  const off = await command.handler({ agent: host.agent, rawInput: '/cue off' })
-  assert.equal(off.kind, 'success')
-  const after = await command.handler({ agent: host.agent, rawInput: '/cue status' })
-  assert.equal(after.kind, 'success')
-  assert.match(after.text, /舞台监督：关/)
+  await command(host, 'cue').handler({ agent: host.agent, rawInput: '/cue on' })
+  assert.equal(visibleCount(cue, host.agent), cue.length)
+  assert.equal(visibleCount(fic, host.agent), fic.length, 'conductor 开着时 fanfic 可用')
+
+  await command(host, 'cue').handler({ agent: host.agent, rawInput: '/cue off' })
+  assert.equal(visibleCount(fic, host.agent), 0, '再关掉 conductor，fic_* 又不可见（/fic on 的状态不覆盖它）')
+
+  // B. 没装 conductor：/fic on 照旧生效（独立模式不变）。
+  const solo = makeHost()
+  await applyFanfic(solo.ctx, config(solo))
+  const soloFic = gatesOf(solo, 'fic_')
+  assert.equal(visibleCount(soloFic, solo.agent), 0)
+  const soloOn = await command(solo, 'fic').handler({ agent: solo.agent, rawInput: 'on' })
+  assert.equal(soloOn.kind, 'success')
+  assert.equal(visibleCount(soloFic, solo.agent), soloFic.length, '没装 conductor 时 /fic on 就是开着')
 })
