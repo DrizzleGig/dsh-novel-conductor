@@ -1,4 +1,4 @@
-# dsh-novel-conductor（舞台监督）
+# dsh-novel-conductor（故事总控）
 
 > 谁上场、什么时候上，它排；戏怎么走，你定。
 
@@ -146,7 +146,7 @@ v0.1.0 共同作者：[MiyueWinter](https://github.com/MiyueWinter) —— 文�
 
 ## 喜欢它？
 
-如果「舞台监督」帮你在长篇写作里把一章的步骤排顺、每一步都有据可查，欢迎在 [GitHub](https://github.com/DrizzleGig/dsh-novel-conductor) 点亮 ⭐，也欢迎 [Issue](https://github.com/DrizzleGig/dsh-novel-conductor/issues) 或 PR。
+如果「故事总控」帮你在长篇写作里把一章的步骤排顺、每一步都有据可查，欢迎在 [GitHub](https://github.com/DrizzleGig/dsh-novel-conductor) 点亮 ⭐，也欢迎 [Issue](https://github.com/DrizzleGig/dsh-novel-conductor/issues) 或 PR。
 
 ## 许可证
 

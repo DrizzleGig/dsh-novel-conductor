@@ -1,4 +1,4 @@
-// dsh-novel-conductor — 舞台监督（v0.1.0）
+// dsh-novel-conductor — 故事总控（v0.1.0）
 //
 // 只读兄弟插件的服务，不写任何兄弟账本；自己的状态只写
 // <workspace>/.dsh-novel-conductor/runs/<runId>/。
@@ -25,11 +25,11 @@ export const inject = ['tools', 'commands', 'workingDirectory', 'agents']
 
 const SKILL = {
   name: 'novel-conductor',
-  description: '舞台监督：一章先做什么、后做什么。它排 runbook、校验每一步的真实收据、在需要作者拍板时停下；不写正文、不改 beat/fade/voice 的账本。当作者要“按流程写一章”“把这一章走完”“看看现在卡在哪一步”时使用。',
+  description: '故事总控：一章先做什么、后做什么。它排 runbook、校验每一步的真实收据、在需要作者拍板时停下；不写正文、不改 beat/fade/voice 的账本。当作者要“按流程写一章”“把这一章走完”“看看现在卡在哪一步”时使用。',
   whenToUse: '要开始/继续/收尾一章、上一章写完要沉淀、作者拍板后要继续、或者要判断当前 run 卡在哪一步时。',
   source: 'runtime',
   content: [
-    '# 舞台监督（dsh-novel-conductor）',
+    '# 故事总控（dsh-novel-conductor）',
     '',
     '## 一句话',
     '',
@@ -37,7 +37,7 @@ const SKILL = {
     '',
     '## 一章的 runbook（不能跳步）',
     '',
-    '- **前置**：作者先 `/cue on`（或点会话头「舞台监督」开关）。关着时 `cue_*` 不可见，也不调度任何兄弟插件；',
+    '- **前置**：作者先 `/cue on`（或点会话头「故事总控」开关）。关着时 `cue_*` 不可见，也不调度任何兄弟插件；',
     '  开着时即使 beat / fade / voice / fanfic 自己的开关是关的，本会话也能调用它们的工具（不改它们的持久偏好）。',
     '',
     '1. `cue_run({action:"start", book, chapter, required_capabilities})`：装配上下文与能力矩阵。',
@@ -76,7 +76,7 @@ export async function apply(ctx) {
   const skills = ctx.get('skills')
   const agentDirs = new Map()
 
-  // ── 接管开关（v0.1.3）：开 = 本会话由舞台监督调度本系列四个插件 ──────────────
+  // ── 接管开关（v0.1.3）：开 = 本会话由故事总控调度本系列四个插件 ──────────────
   // 语义：关着时 cue_* 不可见、不调度任何兄弟；开着时即使兄弟自己的开关关着，
   // 它们的工具也会对本会话可见（beat 的 L1 技能同样补上），但**不改兄弟的持久偏好**。
   const driving = new Set()
@@ -120,7 +120,7 @@ export async function apply(ctx) {
     }))
   }
 
-  // 只读服务：给兄弟插件问「这个会话是不是被舞台监督接管了」。
+  // 只读服务：给兄弟插件问「这个会话是不是被故事总控接管了」。
   if (typeof ctx.provide === 'function') {
     ctx.effect(() => ctx.provide('novelConductor', {
       service_version: 1,
@@ -135,7 +135,7 @@ export async function apply(ctx) {
           capabilities: ['conductor.drive'],
         }
       },
-      /** 这个会话是否由舞台监督调度（兄弟插件在工具门里 OR 它）。 */
+      /** 这个会话是否由故事总控调度（兄弟插件在工具门里 OR 它）。 */
       isDriving,
       /** 订阅接管状态：({ sessionId, driving, agent }) => void，返回取消订阅。 */
       onDriveChange,
@@ -210,7 +210,7 @@ export async function apply(ctx) {
   if (commands?.register) {
     ctx.effect(() => commands.register({
       name: 'cue',
-      description: '舞台监督：/cue on、/cue off、/cue status、/cue abort [runId]',
+      description: '故事总控：/cue on、/cue off、/cue status、/cue abort [runId]',
       input: { hint: 'on | off | status | abort [runId]' },
       handler: async (invocation) => {
         const agent = invocation?.agent
@@ -221,18 +221,18 @@ export async function apply(ctx) {
         // 开关不需要工作区：先处理，免得没有 run 的会话切不了。
         if (verb === 'on' || verb === 'off') {
           const result = setDriving(agent, verb === 'on')
-          if (!result) return { kind: 'error', text: '拿不到当前会话，无法切换舞台监督。' }
+          if (!result) return { kind: 'error', text: '拿不到当前会话，无法切换故事总控。' }
           if (verb === 'on') {
             return {
               kind: 'success',
-              text: '舞台监督已开启：本会话可以调度 beat / fade / voice / fanfic。'
+              text: '故事总控已开启：本会话可以调度 beat / fade / voice / fanfic。'
                 + '它们自己的开关保持原样（不改持久偏好），但本会话里它们的工具与规则会补齐；'
-                + '关闭舞台监督后立即收回。',
+                + '关闭故事总控后立即收回。',
             }
           }
           return {
             kind: 'success',
-            text: '舞台监督已关闭：不再调度任何本系列插件，cue_* 从本会话移除；'
+            text: '故事总控已关闭：不再调度任何本系列插件，cue_* 从本会话移除；'
               + '各插件自己的开关、账本和持久偏好都没有动。',
           }
         }
@@ -240,7 +240,7 @@ export async function apply(ctx) {
         const cwd = activeRunOf(agent?.id)?.cwd ?? await dirFor(agent)
         try {
           if (verb === 'status') {
-            const driveLine = `舞台监督：${isDriving(sessionKeyOf(agent)) ? '开（本会话已接管）' : '关（/cue on 开启）'}`;
+            const driveLine = `故事总控：${isDriving(sessionKeyOf(agent)) ? '开（本会话已接管）' : '关（/cue on 开启）'}`;
             if (!cwd) return { kind: 'success', text: `${driveLine}\n当前没有工作区，也没有活动 run。` };
             let run;
             try {
@@ -259,7 +259,7 @@ export async function apply(ctx) {
               ].filter(Boolean).join('\n'),
             }
           }
-          if (!cwd) return { kind: 'error', text: '拿不到当前工作区，无法查看舞台监督。' }
+          if (!cwd) return { kind: 'error', text: '拿不到当前工作区，无法查看故事总控。' }
           if (verb === 'abort') {
             const run = await getRunStatus(cwd, { runId, agentId: agent.id })
             const { abortRun } = await import('./lib/run-machine.js')

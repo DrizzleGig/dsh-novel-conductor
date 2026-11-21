@@ -6,7 +6,7 @@
 
 ## 中文
 
-想让每一章都写得有条不紊，不遗漏重要的剧情选择，也不让写完后的事情乱成一团？「舞台监督」帮助小说作者安排好每章的写作顺序：先拍板，再写故事，写完后整理进展、核对内容，最后收好尾。它不替你写正文，也不改动其他写作工具里的记录；即使单独使用也没问题。写作卡住时，它会告诉你停在了哪一步。
+想让每一章都写得有条不紊，不遗漏重要的剧情选择，也不让写完后的事情乱成一团？「故事总控」帮助小说作者安排好每章的写作顺序：先拍板，再写故事，写完后整理进展、核对内容，最后收好尾。它不替你写正文，也不改动其他写作工具里的记录；即使单独使用也没问题。写作卡住时，它会告诉你停在了哪一步。
 
 ## English
 
@@ -14,7 +14,7 @@ Want every chapter to move forward smoothly, without losing track of important s
 
 ## 短版（备选）
 
-**中文**：想专心写好故事，不必一边写一边操心接下来该做什么？「舞台监督」帮你安排每章的创作顺序：先拍板，再写作，写完后理清进展、核对内容，再妥善收尾。它不替你写正文，也不改动其他写作工具里的记录；可以单独使用。遇到卡顿，它会告诉你当前停在哪一步。
+**中文**：想专心写好故事，不必一边写一边操心接下来该做什么？「故事总控」帮你安排每章的创作顺序：先拍板，再写作，写完后理清进展、核对内容，再妥善收尾。它不替你写正文，也不改动其他写作工具里的记录；可以单独使用。遇到卡顿，它会告诉你当前停在哪一步。
 
 **English**：Want to focus on your story without worrying about what comes next? "Stage Manager" helps you organize each chapter: decide the story direction, write, review the result, and wrap up. It never writes your prose or changes records in your other writing tools. You can use it on its own, and when you get stuck, it shows you where you paused.
 

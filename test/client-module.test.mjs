@@ -12,7 +12,7 @@ function fakeReact() {
   return React
 }
 
-test('client.js 注册会话头「舞台监督」按钮并挂上 cueMode remote', async () => {
+test('client.js 注册会话头「故事总控」按钮并挂上 cueMode remote', async () => {
   let loaded = null
   globalThis.window = {
     __ModuleLoader__: {

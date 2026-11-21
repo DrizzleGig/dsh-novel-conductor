@@ -5,7 +5,7 @@
 ### 新增：接管开关（conductor 是总开关）+ 会话头按钮
 
 - **`/cue on|off|status`**：会话级开关，默认关。装了 conductor 时它就是总开关——关着时 beat / fade / voice / fanfic **全部不工作**（哪怕它们自己的开关开着）；开着时四个插件可用（哪怕它们自己的开关关着）。没装 conductor 时四个插件各按自己的开关，和以前一样。
-- **会话头「舞台监督」按钮**：`conversation.session.header.utilities`，点一下切 on/off；走 `cueMode` typert remote，Host 侧委托给同一条 `/cue` 命令（一份实现）。`/cue status` 不再要求工作区。
+- **会话头「故事总控」按钮**：`conversation.session.header.utilities`，点一下切 on/off；走 `cueMode` typert remote，Host 侧委托给同一条 `/cue` 命令（一份实现）。`/cue status` 不再要求工作区。
 - **只读服务 `novelConductor`**：`identity()` / `isDriving(sessionId)` / `onDriveChange(cb)`；开关时广播 `novel-conductor/drive`，兄弟插件按它重算生效状态（含 fade/voice 的 deny restrict、beat 的 L1 技能 / L2 提示 / L3 guard）。
 - 新增 `test/drive-switch.test.mjs`（总开关语义 + 不写盘）与 `test/client-module.test.mjs`（模块结构 + 两端契约对齐）；**73/73**。
 

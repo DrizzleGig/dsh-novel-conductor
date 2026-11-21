@@ -1,4 +1,4 @@
-// dsh-novel-conductor 的 Web 半：会话头「舞台监督」开关按钮。
+// dsh-novel-conductor 的 Web 半：会话头「故事总控」开关按钮。
 // 只做一件事：读 remote 的接管状态、点一下切 on/off；其余状态都在 Host。
 
 window.__ModuleLoader__.load({
@@ -108,12 +108,12 @@ window.__ModuleLoader__.load({
 
       const short = state.error ? String(state.error).slice(0, 6) : ''
       const label = state.on === true
-        ? '舞台监督：开'
+        ? '故事总控：开'
         : state.on === false
-          ? '舞台监督：关'
+          ? '故事总控：关'
           : state.error
-            ? `舞台监督！${short}`
-            : '舞台监督'
+            ? `故事总控！${short}`
+            : '故事总控'
       const style = {
         height: 24,
         marginRight: 6,
@@ -131,7 +131,7 @@ window.__ModuleLoader__.load({
       return h('button', {
         type: 'button',
         style,
-        title: state.error ?? '舞台监督：开 = 本会话调度 beat / fade / voice / fanfic；关 = 四个插件全部不工作（/cue on | /cue off）',
+        title: state.error ?? '故事总控：开 = 本会话调度 beat / fade / voice / fanfic；关 = 四个插件全部不工作（/cue on | /cue off）',
         'aria-pressed': state.on === true,
         'aria-busy': state.busy,
         'aria-label': state.error ? `${label}：${state.error}` : label,

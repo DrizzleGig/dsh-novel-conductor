@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "title": "Story Conductor",
+    "description": "Decides what a chapter does first and next: runs the runbook, checks the receipts, and stops when the author has to make a call. It never writes prose and never edits sibling ledgers; while installed it is the master switch for the four novel plugins."
+  },
+  "name": "Story Conductor",
+  "description": "Decides what a chapter does first and next: runs the runbook, checks the receipts, and stops when the author has to make a call. It never writes prose and never edits sibling ledgers; while installed it is the master switch for the four novel plugins.",
+  "tools": {
+    "cue_run": "Start, resume, abort or inspect a chapter runbook",
+    "cue_step": "Submit the result of the current step",
+    "cue_status": "Inspect steps, waiting state, budget and capability matrix"
+  }
+}
