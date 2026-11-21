@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.4 — 2026-11-21
+
+### 修复：会话头按钮每 10 秒往对话里写一行「cue」
+
+- **现象**：对话结束、停在输入框之后，时间线里仍每 10 秒冒出一行
+  `cue · 故事总控：关（/cue on 开启）／当前没有活动 run；/cue on 之后用 cue_run 开始一章。`
+  开着会话越久越多；`dsh-novel-fanfic v0.2.1 开发` 等会话各累计 100+ 行。
+- **根因**：Host 半 `remote.status()` 用 `ctx.commands.execute('/cue status')` 读开关。DSH 的
+  `commands.execute()` 每次都会把 `command/run` + `command/done` **追加进会话日志**
+  （`@deepseek-ai/dsh-commands` `src/index.ts:335`：「Both are direct log-only appends」），
+  而客户端在轮询，于是变成刷屏。实测单个会话 24 分钟 146 次 `/cue`，间隔中位数 10 000 ms。
+- **修复**：`status` 改为只读 `novelConductor.isDriving(sessionId)`（新增 `lib/cue-mode.js`），
+  不再执行命令；`setMode` 仍走 `/cue on|off`——一次点击一行，是审计不是噪音。
+  客户端轮询在页面不可见时暂停，回到前台立刻补一次。
+- **测试**：新增 `test/cue-mode.test.mjs`（只读路径、服务缺失、非法 id、服务异常、源码守卫）；
+  `node --test` **78/78**。
+
 ## 0.1.3 — 2026-11-21
 
 ### 新增：接管开关（conductor 是总开关）+ 会话头按钮

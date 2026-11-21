@@ -1,4 +1,4 @@
-﻿// dsh-novel-conductor 的 Web 半：会话头「故事总控」开关按钮。
+// dsh-novel-conductor 的 Web 半：会话头「故事总控」开关按钮。
 // 只做一件事：读 remote 的接管状态、点一下切 on/off；其余状态都在 Host。
 
 window.__ModuleLoader__.load({
@@ -108,10 +108,40 @@ window.__ModuleLoader__.load({
       }, [sid])
 
       // 别处（/cue 命令、另一个窗口）改了开关时，按钮也要跟上。
+      // 只读轮询：走 remote → novelConductor 服务，不走 /cue 命令——命令会把
+      // command/run + command/done 写进会话日志，每 10 秒一行「cue」提示。
+      // 页面不可见时不轮询，回到前台立刻补一次。
       React.useEffect(() => {
         if (!sid) return undefined
-        const timer = setInterval(() => { run('status', true) }, 10000)
-        return () => clearInterval(timer)
+        const doc = typeof document === 'undefined' ? null : document
+        let timer = null
+        const tick = () => {
+          if (doc && doc.visibilityState === 'hidden') return
+          run('status', true)
+        }
+        const start = () => {
+          if (timer !== null) return
+          timer = setInterval(tick, 10000)
+        }
+        const stop = () => {
+          if (timer === null) return
+          clearInterval(timer)
+          timer = null
+        }
+        const onVisibility = () => {
+          if (doc && doc.visibilityState === 'hidden') {
+            stop()
+            return
+          }
+          tick()
+          start()
+        }
+        start()
+        if (doc && typeof doc.addEventListener === 'function') doc.addEventListener('visibilitychange', onVisibility)
+        return () => {
+          stop()
+          if (doc && typeof doc.removeEventListener === 'function') doc.removeEventListener('visibilitychange', onVisibility)
+        }
       }, [sid])
 
       const short = state.error ? String(state.error).slice(0, 6) : ''
