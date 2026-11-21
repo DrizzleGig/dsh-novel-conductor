@@ -19,7 +19,8 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check index.js && node --check lib/tools.js && node --check lib/run-machine.js && node --check lib/run-store.js && node --check lib/receipt.js && node --check lib/adapters/beat.js && node --check lib/adapters/fade.js && node --check lib/adapters/voice.js && node --check lib/adapters/common.js && node --check lib/session.js && node --check lib/receipt-bus.js"
+    "check": "node --check index.js && node --check lib/tools.js && node --check lib/run-machine.js && node --check lib/run-store.js && node --check lib/receipt.js && node --check lib/adapters/beat.js && node --check lib/adapters/fade.js && node --check lib/adapters/voice.js && node --check lib/adapters/common.js && node --check lib/session.js && node --check lib/receipt-bus.js",
+    "acceptance": "node scripts/simulate-acceptance.mjs"
   },
   "files": [
     "index.js",
@@ -59,5 +60,9 @@
   "homepage": "https://github.com/DrizzleGig/dsh-novel-conductor",
   "bugs": {
     "url": "https://github.com/DrizzleGig/dsh-novel-conductor/issues"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   }
 }

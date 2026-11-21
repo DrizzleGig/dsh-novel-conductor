@@ -36,3 +36,9 @@
 
 - `node --test`：**59/59**。
 - `npm run check`：通过。
+- **模拟验收（2026-11-21）**：确定性假服务 + 合成 `tools/result`，6/6 步、4 条收据、3 个产物，`completed`；见 `docs/acceptance-simulated-2026-11-21.md`。明确不是真实 DSH 宿主验收。
+
+### 修复
+
+- 移除未 `provide` 的 `ctx.novelConductor` 赋值（插件管理页报 `cannot set property "novelConductor" without provide`）。
+- README 补「共同作者」「喜欢它？」「许可证」段；共同作者 MiyueWinter 仍保留在 `package.json` contributors。

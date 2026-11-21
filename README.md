@@ -18,7 +18,9 @@
 - 两种形态：`assist`（有基线插件）与 `solo`（一个都没有）。
 - 收据以宿主 `tools/result(exec, result)` 为准，再通过 `novelBeat.getArtifact` / `novelFade.getArtifact` / `novelFade.getStatus` 回查。
 - `node --test` **59/59**；含真实 beat 0.9.1 只读服务的集成测试（临时账本 + 合成宿主事件）。
-- **未做**：右栏面板、`strict`、`replay`、冲突裁决、fanfic 步骤、多书并行、统一设置。真实 DSH 宿主的一章验收仍待做。
+- **模拟验收**：2026-11-21 PASS（6/6 步、4 条收据、3 个产物），见 [模拟验收报告](docs/acceptance-simulated-2026-11-21.md)。这是确定性假服务 + 合成 `tools/result`，不是真实 DSH 宿主验收。
+- **修复**：移除未 `provide` 的 `ctx.novelConductor` 赋值（插件管理页报 `cannot set property "novelConductor" without provide`），重启后应正常加载。
+- **未做**：右栏面板、`strict`、`replay`、冲突裁决、fanfic 步骤、多书并行、统一设置；真实 DSH 宿主的一章验收仍待做。
 
 ### Codex 只读复审（2026-11-21）
 
@@ -125,7 +127,7 @@ npm run check        # node --check
 - `test/receipt.test.js` / `run-store.test.js` / `adapters.test.js`：纯函数与存储；
 - `test/integration/beat-receipt.test.js`：真实 `novelBeat` 0.9.1 只读服务 + 临时账本 + 合成 `tools/result`。
 
-**未验证**：真实 DSH 宿主里跑完整一章（需要作者会话、真实 beat/fade/voice 数据）；本版只到「真实服务 + 合成宿主事件」这一层，不把它宣传成宿主验收通过。
+**验收口径**：模拟验收已通过（[报告](docs/acceptance-simulated-2026-11-21.md)）。真实 DSH 宿主里跑完整一章（需要作者会话、真实 beat/fade/voice 数据）仍未做；本版只到「真实服务 + 合成宿主事件」这一层，不把它宣传成宿主验收通过。
 
 ## 设计依据
 
@@ -134,6 +136,15 @@ npm run check        # node --check
 - `小说插件系列-conductor-v0.1-开发方案.md`（Novel-gate 工作区 `docs/`）：conductor v1.1 的原始设计。
 - `小说插件系列-五插件协作契约-v1.1.md`（Novel-gate 工作区 `docs/`）：理想契约，文档冻结、不建包。
 
-## License
+## 共同作者
 
-MIT © 2026 DrizzleGig
+v0.1.0 共同作者：[MiyueWinter](https://github.com/MiyueWinter) —— 文案、测试、设计与开发。
+
+## 喜欢它？
+
+如果「舞台监督」帮你在长篇写作里把一章的步骤排顺、每一步都有据可查，欢迎在 [GitHub](https://github.com/DrizzleGig/dsh-novel-conductor) 点亮 ⭐，也欢迎 [Issue](https://github.com/DrizzleGig/dsh-novel-conductor/issues) 或 PR。
+
+## 许可证
+
+MIT License，见 [LICENSE](LICENSE)。
+

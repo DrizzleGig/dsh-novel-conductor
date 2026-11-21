@@ -10,7 +10,6 @@ import { flushPending, getRunStatus, statusView } from './lib/run-machine.js'
 import { activeRunOf, clearRun } from './lib/session.js'
 import { enqueueRaw } from './lib/receipt-bus.js'
 
-const VERSION = '0.1.0'
 const TOOL_PREFIXES = ['beat_', 'memo_', 'voice_', 'fic_']
 
 export const inject = ['tools', 'commands', 'workingDirectory', 'agents']
@@ -167,7 +166,4 @@ export async function apply(ctx) {
       await dirFor(agent)
     }
   }
-
-  // Keep the exported version visible to the host and tests.
-  ctx.novelConductor = { version: VERSION, skill: SKILL.name }
 }
