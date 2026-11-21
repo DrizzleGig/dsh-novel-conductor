@@ -79,11 +79,32 @@ test('fanfic：缺项目时 ready:false + reason，不抛错（分支能力可�
   assert.equal(probe.reason, 'NO_PROJECT')
 })
 
+test('fanfic：README 之外的行为——原创任务（required 不带 fanfic）连探测都不做', async () => {
+  const cwd = await fanficProject()
+  let calls = 0
+  const service = createService({ version: '0.2.0', subscribe: () => () => {} })
+  const counting = {
+    ...service,
+    getStatus: async (args) => { calls += 1; return service.getStatus(args) },
+    getContract: async (args) => { calls += 1; return service.getContract(args) },
+  }
+  const ctx = ctxWith({ novelFanfic: counting })
+  // 没有 beat 服务，required 为空：这是「原创长篇小说」的典型调用
+  const matrix = await probeCapabilities(ctx, { cwd, book: '雾港', chapter: 2 })
+  assert.equal(matrix.fanfic.reason, 'not-required')
+  assert.equal(matrix.fanfic.installed, false)
+  assert.equal(matrix.fanfic.project, null)
+  assert.equal(calls, 0, '原创任务不该调用 fanfic 服务')
+})
+
 test('能力矩阵里 fanfic 是真实探测结果，不再是写死的 not-adapted', async () => {
   const cwd = await fanficProject()
   const service = createService({ version: '0.2.0', subscribe: () => () => {} })
   const ctx = ctxWith({ novelFanfic: service })
-  const matrix = await probeCapabilities(ctx, { cwd, book: '雾港', chapter: 2 })
+  // 同人任务：required 里显式写了 fanfic，才会探测
+  const matrix = await probeCapabilities(ctx, {
+    cwd, book: '雾港', chapter: 2, requiredCapabilitiesInput: ['fanfic'], fanficProject: 'fic',
+  })
   assert.equal(matrix.fanfic.installed, true)
   assert.equal(matrix.fanfic.ready, true)
   if (matrix.fanfic.reason) assert.notEqual(matrix.fanfic.reason, 'not-adapted')
