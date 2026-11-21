@@ -21,7 +21,8 @@
 - `node --test` **59/59**；含真实 beat 0.9.1 只读服务的集成测试（临时账本 + 合成宿主事件）。
 - **模拟验收**：2026-11-21 PASS（6/6 步、4 条收据、3 个产物），见 [模拟验收报告](docs/acceptance-simulated-2026-11-21.md)。这是确定性假服务 + 合成 `tools/result`，不是真实 DSH 宿主验收。
 - **修复**：移除未 `provide` 的 `ctx.novelConductor` 赋值（插件管理页报 `cannot set property "novelConductor" without provide`），重启后应正常加载。
-- **未做**：右栏面板、`strict`、`replay`、冲突裁决、fanfic 步骤、多书并行、统一设置；真实 DSH 宿主的一章验收仍待做。
+- **fanfic（0.1.2）**：同人插件的只读适配——`required_capabilities` 带 `fanfic` 时，上下文多一段 ≤800 字的世界契约（`chapters/<章>` 由 `chapter` 推出 `chNNN`），`verify` 只认 `fic_check` 的 `pass:true`（且必须是 `source:'canon'`、带整数 `revision`）。缺项目时 `ready:false`，不阻塞其它能力。
+- **未做**：右栏面板、`strict`、`replay`、冲突裁决、多书并行、统一设置；真实 DSH 宿主的一章验收仍待做。
 
 ### Codex 只读复审（2026-11-21）
 

@@ -67,6 +67,8 @@ ctx.on('tools/result', (exec, result) => …)
 
 - `on`（会话开关）不可从服务观测：`capabilityMatrix.on = null`，不猜。
 - 事件没有 cwd/agentId/步骤窗口：conductor 只能按自己 run 的 agent/book/chapter + 步骤窗口绑定；同一 agent 同时只允许一个活动 run。
-- fanfic 未适配：`fanfic` 在矩阵里固定 `installed:false, reason:'not-adapted'`；fanfic 0.2.0 之后再接。
+- fanfic（0.1.2 起已适配，只读）：`novelFanfic` 存在时 `installed:true`，按 `getStatus().data.imported/chapters` 判 `ready`；
+  缺项目 → `ready:false, reason:'NO_PROJECT'`，不阻塞其它能力。`required_capabilities` 里带 `fanfic` 时：
+  上下文多一段 ≤800 字的世界契约，`verify` 只认 `fic_check` 收据里的 `pass:true` + `source:'canon'` + 整数 `revision`（夹具结果不算验收）。
 - 真实 DSH 宿主的一章验收尚未跑：当前集成测试用真实 beat 服务 + 合成 `tools/result`。
 - `failed` 不是终态：`cue_run({action:"resume"})` 会重置当前步骤，可以重试；`completed/blocked/aborted` 才是终态。
