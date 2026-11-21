@@ -112,10 +112,34 @@ export async function apply(ctx) {
     return () => driveListeners.delete(listener)
   }
 
+  // 插件被停用/卸载时把接管广播成「关」：兄弟插件按独立开关恢复工具、restrict、技能与 guard。
+  if (typeof ctx.effect === 'function') {
+    ctx.effect(() => () => {
+      for (const sessionId of [...driving]) {
+        driving.delete(sessionId)
+        emitDrive({ sessionId, driving: false, agent: null })
+      }
+    })
+  }
+
   for (const definition of toolDefinitions({ ctx })) {
-    // 注：when 每个模型步骤只求值一次，所以步骤中途关掉开关不会立刻收回已获得的调用资格。
-    // 已经在跑的步骤按 run-machine 的收尾规则处理；不额外加执行前闸门（会绕开单测的工具直调路径）。
-    ctx.effect(() => ctx.tools.register(definition, {
+    // when 每个模型步骤只求值一次；真实调用一定带 toolCallId，用它把「步骤中途关掉开关后
+    // 尚未开始执行」的调用拦下来（已经开始的按 run-machine 的收尾规则处理）。
+    const guarded = {
+      ...definition,
+      async execute(args = {}, exec = {}) {
+        const callId = exec?.toolCallId ?? exec?.callId
+        if (callId && !isDriving(sessionKeyOf(exec?.agent))) {
+          return {
+            ok: false,
+            code: 'conductor-off',
+            message: '故事总控没开（/cue on）；本会话不调度任何兄弟插件。',
+          }
+        }
+        return definition.execute(args, exec)
+      },
+    }
+    ctx.effect(() => ctx.tools.register(guarded, {
       when: (context) => isDriving(sessionKeyOf(context?.agent)),
     }))
   }

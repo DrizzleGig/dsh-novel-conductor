@@ -1,4 +1,4 @@
-// dsh-novel-conductor 的 Web 半：会话头「故事总控」开关按钮。
+﻿// dsh-novel-conductor 的 Web 半：会话头「故事总控」开关按钮。
 // 只做一件事：读 remote 的接管状态、点一下切 on/off；其余状态都在 Host。
 
 window.__ModuleLoader__.load({
@@ -96,7 +96,8 @@ window.__ModuleLoader__.load({
           busyRef.current = false
           const message = String(error?.message ?? error)
           if (!silent) console.error('[novel-conductor] 切换失败', message)
-          setState((prev) => silent ? { ...prev, busy: false } : { ...prev, busy: false, error: message })
+          // 失败时把状态标成「未知」，保留旧值会让按钮和后台长期相反；下次 status 会纠正。
+          setState((prev) => silent ? { ...prev, busy: false } : { on: null, busy: false, error: message })
         }
       }
 
@@ -104,6 +105,13 @@ window.__ModuleLoader__.load({
         if (!sid || lastSid.current === sid) return
         lastSid.current = sid
         run('status', true)
+      }, [sid])
+
+      // 别处（/cue 命令、另一个窗口）改了开关时，按钮也要跟上。
+      React.useEffect(() => {
+        if (!sid) return undefined
+        const timer = setInterval(() => { run('status', true) }, 10000)
+        return () => clearInterval(timer)
       }, [sid])
 
       const short = state.error ? String(state.error).slice(0, 6) : ''
