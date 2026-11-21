@@ -11,8 +11,9 @@
 
 没有 conductor，beat / fade / voice 仍可独立使用；装了 conductor，也不会让它们变成子模块。
 
-## 状态（0.1.0-alpha）
+## 状态（0.1.1，docs-only）
 
+- 已发布 npm **0.1.0** / GitHub **v0.1.0**（2026-11-21）；0.1.1 为 docs-only 修正。
 - 3 个工具：`cue_run` / `cue_step` / `cue_status`。
 - 6 步 + 1 个等待态：`preflight → [await_author] → write → segment → verify → digest → close`。
 - 两种形态：`assist`（有基线插件）与 `solo`（一个都没有）。
@@ -39,13 +40,13 @@
 
 ## 安装 / 启用
 
-包本身是 DSH host 插件，没有客户端 UI。当前版本（0.1.0-alpha）尚未发布 npm，先在桌面 profile 里用 `link:` 指向本仓库：
+包本身是 DSH host 插件，没有客户端 UI。已发布 npm `dsh-novel-conductor@0.1.0`；本地开发也可以继续用 `link:` 指向本仓库：
 
 ```json
 "dsh-novel-conductor": "link:D:/Novel-gate/dsh-novel-conductor"
 ```
 
-并把 `dsh-novel-conductor` 加进 `dsh.profile.bundles`，重启 DSH 或刷新宿主后生效。发布后再用：
+并把 `dsh-novel-conductor` 加进 `dsh.profile.bundles`，重启 DSH 或刷新宿主后生效。安装 npm 版本：
 
 ```bash
 dsh plugin add dsh-novel-conductor
