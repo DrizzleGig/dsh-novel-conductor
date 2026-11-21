@@ -238,10 +238,10 @@ export async function apply(ctx) {
         }
 
         const cwd = activeRunOf(agent?.id)?.cwd ?? await dirFor(agent)
-        if (!cwd) return { kind: 'error', text: '拿不到当前工作区，无法查看舞台监督。' }
         try {
           if (verb === 'status') {
             const driveLine = `舞台监督：${isDriving(sessionKeyOf(agent)) ? '开（本会话已接管）' : '关（/cue on 开启）'}`;
+            if (!cwd) return { kind: 'success', text: `${driveLine}\n当前没有工作区，也没有活动 run。` };
             let run;
             try {
               run = await getRunStatus(cwd, { runId, agentId: agent.id });
@@ -259,6 +259,7 @@ export async function apply(ctx) {
               ].filter(Boolean).join('\n'),
             }
           }
+          if (!cwd) return { kind: 'error', text: '拿不到当前工作区，无法查看舞台监督。' }
           if (verb === 'abort') {
             const run = await getRunStatus(cwd, { runId, agentId: agent.id })
             const { abortRun } = await import('./lib/run-machine.js')

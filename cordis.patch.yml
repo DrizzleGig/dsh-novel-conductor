@@ -1,3 +1,5 @@
 - insert:
     - id: novel-conductor
       name: 'dsh-novel-conductor'
+    - id: novel-conductor-remote
+      name: 'dsh-novel-conductor/remote'
