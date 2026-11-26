@@ -72,6 +72,26 @@ test('receipt：findReceipts 只留窗口内且工具匹配的收据', () => {
   assert.deepEqual(findReceipts(receipts, step, ['beat_verify']).map((item) => item.seq), [5])
 })
 
+test('receipt：fanfic 收据缺 project 或跨项目不通过', () => {
+  const run = {
+    agentId: 'a1', book: '书', chapter: 1, cwd: 'D:\\book',
+    requiredCapabilities: ['fanfic'], fanficProject: 'p1',
+  }
+  const step = { id: 'verify', windowStart: 0 }
+  const missing = normalizeReceipt({
+    name: 'fic_check', agent: { id: 'a1' }, arguments: { chapter: 1, source: 'canon' },
+  }, result, { seq: 2 })
+  assert.equal(matchesRun(run, step, missing), false)
+  const other = normalizeReceipt({
+    name: 'fic_check', agent: { id: 'a1' }, arguments: { project: 'p2', chapter: 1, source: 'canon' },
+  }, result, { seq: 3 })
+  assert.equal(matchesRun(run, step, other), false)
+  const ok = normalizeReceipt({
+    name: 'fic_check', agent: { id: 'a1' }, arguments: { project: 'p1', chapter: 1, source: 'canon' },
+  }, result, { seq: 4 })
+  assert.equal(matchesRun(run, step, ok), true)
+})
+
 test('receipt：dedupe 按 id 只留第一次', () => {
   const a = { id: 'x', seq: 1 }
   const b = { id: 'x', seq: 2 }

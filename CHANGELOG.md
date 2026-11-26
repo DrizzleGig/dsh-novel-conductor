@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.2.0 — 2026-11-26
+
+### 新增：书身份、隔离与调度底座
+
+- **书身份 `book.json` / `books.json`**：`cue_scope`（`/cue scope`）`init` / `add` / `bind` / `status`；`bookId` 形如 `bk-<uuid>`，不随书名/路径变化。
+- **run 按书落盘**：`<workspace>/.dsh-novel-conductor/books/<bookId>/runs/<runId>/`；`run.json` 记录 `bookId`。旧 `runs/<runId>` 仍可读，新 run 不再写旧布局。
+- **按 agent 注册技能**：`novel-conductor` 不再全局可见；只在 `/cue on` 后注册到当前 agent，`/cue off` 收回。
+- **参数与路径门**：受管工具的 `book`/`bookId`/`dir` 必须与绑定一致；`write`/`edit` 的路径不能越出书工作区。
+- **每书写锁**：`lib/locks.js` 跨进程锁文件，`alive/dead/unknown` 三态；写工具经 `tools/execute` 自动取锁；`cue_locks` 查看，break 只走作者命令 `/cue locks break`。
+- **会话绑定**：单书工作区在 `agent/created` 自动绑定；多书工作区未 `cue_scope bind` 前不开放创作工具。
+
+### 新增：第三方工具网关
+
+- **`cue_tools`**：按 query 列出当前步骤可调用的工具（含 MCP `mcp__server__tool` 与第三方插件），标 `effects`/`stateScope`/`bound`。
+- **`cue_call`**：调用任意已注册工具，不需要它为 conductor 做适配。网关注入 `book`/`bookId`/`dir`，拒绝跨书与保留工具（`cue_*`、`run_code`、`skill` 等），按 `ProviderPolicy` 决定是否允许，并写 gateway 收据。
+- **`providers.json`**：第三方工具显式声明 `effects/stateScope/bindings/allowedRoots/retry`；未声明状态位置的工具默认拒绝，MCP 以 `external` 放行。
+- **收据**：`kind:"gateway"`，含 `tool/callId/operationId/argsHash/resultHash/bookId/runId/effects/stateScope/bound`；不复制正文。
+
+### 新增：runbook 视图
+
+- `cue_status({view:"runbook"})` 返回阶段计划：preflight / context / plan / await_author / write / voice_pass / segment / verify / digest / close，每阶段列出可用的 calls、skills、budget 与缺失能力。
+
+### 适配最新兄弟版本
+
+- 能力矩阵新增 `version/minVersion/compatible`：beat ≥ 0.12.0、fade ≥ 0.8.0、voice ≥ 0.4.0、fanfic ≥ 0.4.0；低版本仍可探测，但明确标 `compatible:false`，不静默当成已验证。
+- 适配 beat 0.12.1 的 `novelBeat` 只读服务（`getStatus/getRevision/getCanon/getArtifact/query`）、fade 0.8.2 的双库服务、voice 0.4.0 的 `getStatus/getBrief/getPersonaBrief`、fanfic 0.4.3 的公共信封服务。
+
+### 测试
+
+- `node --test` **102/102**（新增 scope/locks/book-run/gateway/isolation 测试）。
+- `npm run check` 覆盖新增模块。
+
+### Codex 审查 P0 修复（2026-11-26）
+
+- **不能读 `agent.ctx.skills` / `agent.ctx.tools` 属性**：改用 `agent.ctx.get('tools'/'skills')`，修复点击「故事总控」开关时 `cannot get property 'skills' without inject`；guard/restrict 保留方法接收者，安装失败不标记。
+- **路径门读真实参数**：`write`/`edit` 同时接受 `file_path` 与 `path`，并用 `assertPathInside` 做真实路径校验（含 junction）。
+- **锁不能被模型强拆**：`cue_locks` 只保留 `status`；`break` 只走作者命令 `/cue locks break`。
+- **写工具分类**：`isWriteTool` 覆盖 `write/edit`、`voice_import/learn/profile` 等，直调与网关共用写锁。
+- **ProviderPolicy 真正生效**：未配置的 MCP 默认拒绝；`effects` 为空拒绝；`bindings`/`allowedRoots` 实际校验；`project` 与当前 run 的同人项目绑定。
+- **收据归属**：保存 `bookId/root/project/chapter`，字符串章号 `ch002` 归一化为 2；跨项目/跨章收据不通过。
+- **原子写**：`run-store` 替换失败时先备份旧文件，重试失败回滚，不再出现旧、新都没了。
+- **绑定持久化**：`scope-manager.select` 先写 session 绑定成功后才更新内存；失败保留旧绑定并报错。
+
+### 已知限制（0.2.0 不宣称已解决）
+
+- **COMMON-WRITER 未跨包落地**：只锁 conductor 可见的写入口；kit 面板、remote、独立插件直写仍可能旁路。需要在各包最终提交点接同一协议。
+- **PTC/`run_code` 嵌套**：`PTC → SDK → cue_call → tools.execute` 会丢 `parent`；当前网关按 native 路径实现，PTC 下未验证。
+- **同 cwd 多书写正文**：kit 正文路径 P0（`chapter.js:894`）未修前，本版**硬拦**多书工作区的 `cue_run start`、`write`/`edit` 与受管工具；一书一工作区。
+- **全局状态插件**：`global/unknown` 状态的第三方工具默认拒绝写；串行不能消除缓存串读。
+- **自动回收锁**：0.2.0 只做作者命令 `/cue locks break`，不做自动接管。
+- 真实 DSH 宿主整章验收仍未做；78→102 是单测，不是宿主验收。
+
 ## 0.1.4 — 2026-11-21
 
 ### 修复：会话头按钮每 10 秒往对话里写一行「cue」

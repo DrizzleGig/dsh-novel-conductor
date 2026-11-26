@@ -135,7 +135,7 @@ test('verify：fic_check 的 pass:true 才算过；pass:false 判 verify-failed'
 
   // 造一条 fic_check 收据：pass:false（还有 blocker）
   await host.emit(
-    exec('fic_check', AGENT, { chapter: 'ch002', source: 'canon' }, 'call-fic-1'),
+    exec('fic_check', AGENT, { project: 'fic', chapter: 'ch002', source: 'canon' }, 'call-fic-1'),
     result({ ok: true, text: 'blocker 1', status: 'completed', pass: false, source: 'canon', revision: 3, summary: { blockers: 1, waived: 0 } }),
   )
   const failed = await stepRun(host.ctx, { cwd, runId, agentId: AGENT, stepId: 'verify', status: 'done' })
@@ -144,7 +144,7 @@ test('verify：fic_check 的 pass:true 才算过；pass:false 判 verify-failed'
 
   // 夹具数据不算真书验收：source:'fixture' 的 pass:true 也必须被拒
   await host.emit(
-    exec('fic_check', AGENT, { chapter: 'ch002', source: 'fixture' }, 'call-fic-fixture'),
+    exec('fic_check', AGENT, { project: 'fic', chapter: 'ch002', source: 'fixture' }, 'call-fic-fixture'),
     result({ ok: true, text: 'pass', status: 'completed', pass: true, source: 'fixture', revision: 3, summary: { blockers: 0 } }),
   )
   const fixturePass = await stepRun(host.ctx, { cwd, runId, agentId: AGENT, stepId: 'verify', status: 'done' })
@@ -153,7 +153,7 @@ test('verify：fic_check 的 pass:true 才算过；pass:false 判 verify-failed'
 
   // 再补一条 canon + pass:true（waiver 在服务端已应用）：verify 通过
   await host.emit(
-    exec('fic_check', AGENT, { chapter: 'ch002', source: 'canon' }, 'call-fic-2'),
+    exec('fic_check', AGENT, { project: 'fic', chapter: 'ch002', source: 'canon' }, 'call-fic-2'),
     result({ ok: true, text: 'pass', status: 'completed', pass: true, source: 'canon', revision: 3, summary: { blockers: 0, waived: 1 } }),
   )
   const passed = await stepRun(host.ctx, { cwd, runId, agentId: AGENT, stepId: 'verify', status: 'done' })

@@ -1,6 +1,6 @@
 {
   "name": "dsh-novel-conductor",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "故事总控：为长篇小说写作排一条可回查的 runbook。它不写正文、不改兄弟账本，只负责这一章先做什么、后做什么，并用宿主工具收据验证每一步真的发生了。",
   "type": "module",
   "main": "index.js",
@@ -28,7 +28,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check index.js && node --check lib/tools.js && node --check lib/run-machine.js && node --check lib/run-store.js && node --check lib/receipt.js && node --check lib/adapters/beat.js && node --check lib/adapters/fade.js && node --check lib/adapters/voice.js && node --check lib/adapters/common.js && node --check lib/session.js && node --check lib/receipt-bus.js && node --check lib/tool-schema.mjs && node --check lib/cue-mode.js",
+    "check": "node --check index.js && node --check lib/tools.js && node --check lib/run-machine.js && node --check lib/run-store.js && node --check lib/receipt.js && node --check lib/scope.js && node --check lib/scope-manager.js && node --check lib/locks.js && node --check lib/gateway.js && node --check lib/runbook.js && node --check lib/adapters/beat.js && node --check lib/adapters/fade.js && node --check lib/adapters/voice.js && node --check lib/adapters/fanfic.js && node --check lib/adapters/common.js && node --check lib/session.js && node --check lib/receipt-bus.js && node --check lib/tool-schema.mjs && node --check lib/cue-mode.js",
     "acceptance": "node scripts/simulate-acceptance.mjs"
   },
   "files": [

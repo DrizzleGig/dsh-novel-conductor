@@ -5,16 +5,15 @@ import { createHost, exec, fakeBeat, result, workspace, writeFile } from './help
 
 const AGENT = 'agent-1'
 
-test('插件：注册 3 个 cue_* 工具、/cue 命令与 skill', async () => {
+test('插件：注册 7 个 cue_* 工具（run/step/status/scope/locks/tools/call）与 /cue 命令', async () => {
   const cwd = await workspace()
   const host = await createHost({ cwd, services: { novelBeat: fakeBeat() } })
-  assert.deepEqual(host.registered.map(({ definition }) => definition.name).sort(), ['cue_run', 'cue_status', 'cue_step'])
+  assert.deepEqual(
+    host.registered.map(({ definition }) => definition.name).sort(),
+    ['cue_call', 'cue_locks', 'cue_run', 'cue_scope', 'cue_status', 'cue_step', 'cue_tools'],
+  )
   assert.equal(host.commands.length, 1)
   assert.equal(host.commands[0].name, 'cue')
-  assert.equal(host.skills.length, 1)
-  assert.equal(host.skills[0].name, 'novel-conductor')
-  assert.match(host.skills[0].content, /cue_run/)
-  assert.match(host.skills[0].content, /claimed/)
 })
 
 test('工具：cue_run(start) → cue_status → cue_step(write) → close（solo）', async () => {

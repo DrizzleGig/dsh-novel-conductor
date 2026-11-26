@@ -1,4 +1,4 @@
-﻿// 接管开关的模拟验收（不起 DSH 宿主）。
+// 接管开关的模拟验收（不起 DSH 宿主）。
 //
 // 语义（2026-11-21 作者定稿）：
 //   装了 conductor：它就是总开关——关着时四个插件全都不工作（哪怕它们自己的开关开着）；
@@ -12,7 +12,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import os from 'node:os'
 import path from 'node:path'
-import { mkdtempSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { apply as applyFade } from '../../dsh-novel-fade/index.js'
 import { apply as applyVoice } from '../../dsh-novel-voice/index.js'
 import { apply as applyFanfic } from '../../dsh-novel-fanfic/index.js'
@@ -29,6 +29,11 @@ function makeHost() {
   const listeners = new Map()
   const dir = mkdtempSync(path.join(os.tmpdir(), 'cue-drive-'))
   const stateDir = mkdtempSync(path.join(os.tmpdir(), 'cue-drive-state-'))
+  mkdirSync(path.join(dir, '.dsh-novel-conductor'), { recursive: true })
+  writeFileSync(
+    path.join(dir, '.dsh-novel-conductor', 'book.json'),
+    JSON.stringify({ schemaVersion: 1, bookId: 'bk-11111111-1111-1111-1111-111111111111', book: '书', title: '书' }),
+  )
 
   const skillsApi = {
     register(skill) {
@@ -68,7 +73,7 @@ function makeHost() {
       if (key === 'skills') return skillsApi
       if (key === 'commands') return ctx.commands
       if (key === 'workingDirectory') return workingDirectory
-      if (key === 'agents') return { list: () => [] }
+      if (key === 'agents') return { list: () => [agent] }
       return services.get(key)
     },
     effect(fn) {
