@@ -1,6 +1,6 @@
 # conductor 0.2.0 发布前检查清单（2026-11-26）
 
-> 状态：**0.2.0 发布候选**。本清单记录已跑过的门禁和发布时仍需注意的验收；不把单测当宿主验收。
+> 状态：**已发布 0.2.0**（npm / GitHub v0.2.0，2026-11-26）。本清单记录已跑过的门禁和发布后仍需注意的验收；不把单测当宿主验收。
 
 ## 1. 版本与范围
 
@@ -14,7 +14,7 @@
 cd D:/Novel-gate/dsh-novel-conductor
 node --test          # 102/102 pass（2026-11-26）
 npm run check        # exit 0
-npm pack --dry-run   # 38 files / 70.3 kB / 229.1 kB unpacked
+npm pack --dry-run   # 38 files / 70.5 kB / 230.1 kB unpacked
 ```
 
 - `node --test`：102 tests / 102 pass / 0 fail。

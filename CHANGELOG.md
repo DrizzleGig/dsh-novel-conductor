@@ -2,6 +2,8 @@
 
 ## 0.2.0 — 2026-11-26
 
+> 已发布 npm **0.2.0** / GitHub **v0.2.0**（2026-11-26）。
+
 ### 新增：书身份、隔离与调度底座
 
 - **书身份 `book.json` / `books.json`**：`cue_scope`（`/cue scope`）`init` / `add` / `bind` / `status`；`bookId` 形如 `bk-<uuid>`，不随书名/路径变化。
