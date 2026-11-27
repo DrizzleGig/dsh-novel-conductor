@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-import { callTool, isManagedTool, listTools, policyFor } from '../lib/gateway.js'
+import { callTool, isManagedTool, isKitNamespace, listTools, policyFor } from '../lib/gateway.js'
 import { isWriteTool } from '../lib/effects.js'
 import { initBook } from '../lib/scope.js'
 import { readReceipts } from '../lib/run-store.js'
@@ -147,4 +147,17 @@ test('gateway：listTools 过滤并标记策略', async () => {
   assert.equal(isManagedTool('novel_chapter_start'), false)
   assert.equal(isManagedTool('kit_status'), false)
   assert.equal(isManagedTool('fic_state'), true)
+  assert.equal(isKitNamespace('novel_query'), true)
+  assert.equal(isKitNamespace('kit_status'), true)
+  assert.equal(isKitNamespace('fic_state'), false)
+})
+
+test('gateway：即使 ProviderPolicy 允许，也不路由 kit 的 novel_*/kit_*', async () => {
+  await assert.rejects(
+    () => callTool({
+      ctx: fakeCtx([]), agent: { id: 'a1' }, tool: 'novel_query',
+      args: {}, policies: { novel_query: { effects: ['read'], stateScope: 'global', source: 'explicit' } },
+    }),
+    /kit 工具不归 conductor 管辖/,
+  )
 })
