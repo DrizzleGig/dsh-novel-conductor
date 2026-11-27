@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1 — 2026-11-27 · kit 独立与 fanfic 项目绑定（本地版，未发布）
+
+### 修复
+
+- **不再管辖 kit**：`lib/effects.js` 与 `lib/gateway.js` 的 `MANAGED_PREFIXES` 移除 `novel_`/`kit_`；conductor 关闭或未绑定时不再拦截 kit 的 `novel_*` 工具。all-six 下 kit 可独立工作。
+- **`cue_run` 补 `fanfic_project`**：schema 声明并传给 `startRun`，run 的 fanfic 项目可绑定；`fic_*` 直调在 run 未声明项目时允许显式 project，不再永久 `cross-project`。
+- **runbook 工具名**：`fic_canon` 改 `fic_contract`；plan 阶段从 `novel_plan`（kit）改 `beat_plan`（五件），不再向五件流程推荐 kit 工具。
+- **close 回读正文 hash**：`completeClose` 对每个 chapter artifact 重新读文件并比对 `sha1`；write 收据后改文件会以 `artifact-stale` 拒绝并回到 write 步骤，避免把漂移正文标 completed。
+- 新增 gateway 管辖边界、`cue_run` schema 与 artifact-stale 测试；`npm test` 104/104。
+
 ## 0.2.0 — 2026-11-26
 
 > 已发布 npm **0.2.0** / GitHub **v0.2.0**（2026-11-26）。

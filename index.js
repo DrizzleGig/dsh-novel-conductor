@@ -1,4 +1,4 @@
-// dsh-novel-conductor — 故事总控（v0.1.0）
+// dsh-novel-conductor — 故事总控（v0.2.1）
 //
 // 只读兄弟插件的服务，不写任何兄弟账本；自己的状态只写
 // <workspace>/.dsh-novel-conductor/runs/<runId>/。
@@ -149,7 +149,9 @@ export async function apply(ctx) {
           if (typeof project === 'string' && project) {
             const run = activeRunOf(agent.id)
             const known = run?.fanficProject ?? run?.capabilityMatrix?.fanfic?.project ?? null
-            if (!known || project !== known) {
+            // run 尚未声明 fanfic 项目时，允许作者/模型显式指定一次；只有与已声明项目
+            // 不一致才拒绝。否则 cue_run schema 缺 fanfic_project 的旧 run 会永久死锁。
+            if (known && project !== known) {
               return { reason: `project 与当前 run 的同人项目不一致：${project}`, info: { name: 'ConductorScopeError', code: 'cross-project' } }
             }
           }

@@ -8,6 +8,13 @@ import { assertParameterSchema, captureToolDefinitions } from '../lib/tool-schem
 
 const definitions = () => captureToolDefinitions(apply, {});
 
+test('cue_run 声明 fanfic_project（run 的项目绑定入口）', () => {
+  const run = definitions().find((definition) => definition.name === 'cue_run');
+  assert.ok(run, '没有 cue_run');
+  assert.equal(typeof run.parameters.properties.fanfic_project, 'object');
+  assert.equal(run.parameters.additionalProperties, false);
+});
+
 test('所有工具的参数都是可接受的 JSON Schema', () => {
   const tools = definitions();
   assert.ok(tools.length > 0, '没有抓到任何工具注册');

@@ -142,4 +142,9 @@ test('gateway：listTools 过滤并标记策略', async () => {
   assert.equal(policyFor('beat_segment').effects.includes('write'), true)
   assert.equal(isManagedTool('beat_segment'), true)
   assert.equal(isManagedTool('mcp__x__y'), false)
+  // kit 是独立产品：conductor 的总控开关/scope 守卫不得接管 novel_*。
+  assert.equal(isManagedTool('novel_query'), false)
+  assert.equal(isManagedTool('novel_chapter_start'), false)
+  assert.equal(isManagedTool('kit_status'), false)
+  assert.equal(isManagedTool('fic_state'), true)
 })

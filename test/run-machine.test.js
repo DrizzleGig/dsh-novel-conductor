@@ -47,6 +47,22 @@ test('solo：零插件也能完成 preflight → write → close', async () => {
   assert.equal(close.run.state, 'completed')
 })
 
+test('close 回读正文 hash：write 收据后改文件必须拒绝', async () => {
+  const cwd = await workspace()
+  const host = await createHost({ cwd })
+  const started = await startRun(host.ctx, { cwd, agentId: AGENT, book: BOOK, chapter: CHAPTER })
+  await writeFile(cwd, '正文/第1章.md', '原稿')
+  const write = await stepRun(host.ctx, {
+    cwd, runId: started.run.runId, agentId: AGENT, stepId: 'write',
+    artifact: { path: '正文/第1章.md' },
+  })
+  assert.equal(write.ok, true)
+  await writeFile(cwd, '正文/第1章.md', '原稿被改过')
+  const close = await stepRun(host.ctx, { cwd, runId: started.run.runId, agentId: AGENT, stepId: 'close' })
+  assert.equal(close.ok, false)
+  assert.equal(close.code, 'artifact-stale')
+})
+
 test('assist：beat 有待拍板时停在 await_author，拍板后 resume 才写', async () => {
   const { cwd, host, status, started } = await startBeatRun({
     pending: [{ id: 'b-1', title: '是否救人', status: 'asked' }],
