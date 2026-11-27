@@ -1,5 +1,9 @@
 # dsh-novel-conductor（故事总控）
 
+[![npm version](https://img.shields.io/npm/v/dsh-novel-conductor)](https://www.npmjs.com/package/dsh-novel-conductor)
+[![license](https://img.shields.io/badge/license-MIT-blue)](https://github.com/DrizzleGig/dsh-novel-conductor/blob/main/LICENSE)
+[![stars](https://img.shields.io/github/stars/DrizzleGig/dsh-novel-conductor)](https://github.com/DrizzleGig/dsh-novel-conductor/stargazers)
+
 > 谁上场、什么时候上，它排；戏怎么走，你定。
 
 `dsh-novel-conductor` 是 DSH 小说插件系列的可选编排层，也是**书身份与工具网关**。它不写正文、不改 beat / fade / voice 的任何账本，只做六件事：
