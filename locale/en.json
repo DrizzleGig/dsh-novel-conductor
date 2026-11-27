@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Story Conductor",
-    "description": "Decides what a chapter does first and next: runs the runbook, checks the receipts, and stops when the author has to make a call. It never writes prose and never edits sibling ledgers; while installed it is the master switch for the four novel plugins."
+    "description": "一章先做什么、后做什么：排 runbook、校验收据、在作者拍板时停下。它不写正文，也不改兄弟插件的账本；装了它，本系列四个插件的开关由它统管。"
   },
   "name": "Story Conductor",
   "description": "Decides what a chapter does first and next: runs the runbook, checks the receipts, and stops when the author has to make a call. It never writes prose and never edits sibling ledgers; while installed it is the master switch for the four novel plugins.",
