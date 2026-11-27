@@ -1,6 +1,6 @@
 {
   "name": "dsh-novel-conductor",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "故事总控：为长篇小说写作排一条可回查的 runbook。它不写正文、不改兄弟账本，只负责这一章先做什么、后做什么，并用宿主工具收据验证每一步真的发生了。",
   "type": "module",
   "main": "index.js",
