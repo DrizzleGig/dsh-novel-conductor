@@ -160,6 +160,7 @@ export async function apply(ctx) {
       }
       if (typeof agent.ctx.on !== 'function') return
       agent.ctx.on('tools/pre-execute', async (exec, next) => {
+        if (!isDriving(agent.id)) return next()
         try {
           const binding = scope.get(agent)
           if (!binding) {
@@ -194,6 +195,7 @@ export async function apply(ctx) {
         return next()
       })
       agent.ctx.on('tools/execute', async (exec, next) => {
+        if (!isDriving(agent.id)) return next()
         const binding = scope.get(agent)
         if (!binding) return next()
         if (!isWriteTool(exec.name)) return next()
