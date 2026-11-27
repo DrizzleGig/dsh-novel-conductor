@@ -13,7 +13,7 @@
 
 没有 conductor，beat / fade / voice 仍可独立使用；装了 conductor，也不会让它们变成子模块。
 
-## 本版本（v0.2.0，2026-11-26）
+## 本版本（v0.2.1，2026-11-27）
 
 - **书身份隔离**：`cue_scope` / `/cue scope` 的 `init`、`add`、`bind`、`status`；`book.json` + `bookId`，run 落到 `books/<bookId>/runs/`。
 - **按 agent 注册**：`novel-conductor` 技能只在 `/cue on` 后进入当前会话；普通工作区会话看不到。
@@ -39,9 +39,9 @@
 - `/cue status` 第一行报开关状态，没有工作区、没有 run 也能答。
 
 
-## 状态（0.2.0，发布前开发版）
+## 状态（0.2.1，发布版）
 
-- 发布：npm **0.2.0**（registry 为准）；0.1.4 为上一版。
+- 发布：npm **0.2.1**（registry 为准）；0.2.0 为上一版。
 - 7 个工具：`cue_run` / `cue_step` / `cue_status` / `cue_scope` / `cue_locks` / `cue_tools` / `cue_call`。
 - 6 步 + 1 个等待态：`preflight → [await_author] → write → segment → verify → digest → close`。
 - 两种形态：`assist`（有基线插件）与 `solo`（一个都没有）。
